@@ -57,6 +57,21 @@ int main()
     // Флаг конца игры
     bool isGameOver = false;
 
+    // Лямбда функция по инициализации врага
+    auto InitEnemy = [&]()
+        {
+            Enemy enemy;
+            enemy.enemyShape = RectangleShape({ 40.0f, 30.0f });
+            enemy.enemyShape.setFillColor(Color::Red);
+            enemy.enemyShape.setOutlineColor(Color::White);
+            enemy.enemyShape.setOutlineThickness(5.0f);
+
+            // В качестве позиции x используется рандомизированное число xDistribution с соответствующим seed
+            enemy.enemyShape.setPosition({ xDistribution(rng), -9.0f });
+
+            enemiesArray.push_back(enemy);
+        };
+
     while (mainWindow.isOpen() && !isGameOver)
     {        
         // Обработка события по взаимодействию с главным окном
@@ -108,16 +123,7 @@ int main()
         // ---------------Инициализация врагов---------------
         if (spawnEnemyClock.getElapsedTime().asSeconds() > 1.0f)
         {
-            Enemy enemy;
-            enemy.enemyShape = RectangleShape({ 40.0f, 30.0f });
-            enemy.enemyShape.setFillColor(Color::Red);
-            enemy.enemyShape.setOutlineColor(Color::White);
-            enemy.enemyShape.setOutlineThickness(5.0f);
-
-            // В качестве позиции x используется рандомизированное число xDistribution с соответствующим seed
-            enemy.enemyShape.setPosition({ xDistribution(rng), -9.0f });
-
-            enemiesArray.push_back(enemy);
+            InitEnemy();
             spawnEnemyClock.restart();
         }
 
@@ -170,7 +176,6 @@ int main()
         for (Bullet& bullet : bulletsArray) mainWindow.draw(bullet.bulletShape);
         for (Enemy& enemy: enemiesArray) mainWindow.draw(enemy.enemyShape);
 
-        mainWindow.draw(enemiesArray[0].enemyShape);
         mainWindow.draw(playerShape);
         mainWindow.display();
     }
