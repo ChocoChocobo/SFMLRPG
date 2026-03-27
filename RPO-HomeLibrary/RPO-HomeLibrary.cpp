@@ -15,20 +15,20 @@ class InputField // shape, событие нажатия по фигуре, от
 public:
 	// Удобно разграничить функционал конструктора следующим образом: инициализацию производить в значениях по умолчанию, а настраивать объекты в теле конструктора
 	//			шрифт,				 подпись к полю ввода,		позиция в окне,		размер
-	InputField(const sf::Font& font, sf::String caption, sf::Vector2f position, sf::Vector2f size) : captionText(font, caption, 18), valueText(font, "", 18) 
+	InputField(const sf::Font& font, sf::String caption, sf::Vector2f position, sf::Vector2f size) : captionText(font, caption, 18), valueText(font, L"Я пример", 18) 
 	{
 		// fieldShape
 		fieldShape.setPosition(position);
 		fieldShape.setSize(size);
 		fieldShape.setFillColor(sf::Color(EGGSHELL_COLOR));
-		fieldShape.setOutlineColor(sf::Color(ROSY_GRANITE_COLOR));
+		fieldShape.setOutlineColor(sf::Color(CHARCOAL_BROWN_COLOR));
 		fieldShape.setOutlineThickness(3.0f);
 		// caption
 		captionText.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
 		captionText.setPosition({ position.x, position.y - 25.0f });
 		// valueText
-		captionText.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
-		captionText.setPosition({ position.x + 10.0f, position.y + 5.0f});
+		valueText.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
+		valueText.setPosition({ position.x + 10.0f, position.y + 5.0f});
 	}
 
 	// Функция для проверки попадания в окно
@@ -45,7 +45,7 @@ public:
 	void SetActive(bool isActive)
 	{
 		this->isActive = isActive;
-		fieldShape.setOutlineColor(isActive ? sf::Color(163, 149, 148, 255) : sf::Color(163, 149, 148, 100));
+		fieldShape.setOutlineColor(isActive ? sf::Color(66, 62, 55, 255) : sf::Color(66, 62, 55, 150));
 	}
 
 	// Get-функция по возвращению строкового значения поля ввода
@@ -61,7 +61,8 @@ public:
 	}
 
 	// Функция-обработчик события введения символа пользователем, принимающая символ юникода
-	void HandleTextEntered(char unicode)
+	// char_32_t - тип данных, захватывающий в два больше символов ASCII, где располагается кириллица
+	void HandleTextEntered(char32_t unicode)
 	{
 		if (!isActive) return; // Если пользователь не в активном окне ввода, то завершаем работу функции
 		// Ситуации стирания
@@ -78,6 +79,7 @@ public:
 	// Функция отрисовки, принимающая ссылку на графическое окно
 	void Draw(sf::RenderWindow& renderWindow)
 	{
+		valueText.setString(valueString);
 		renderWindow.draw(captionText);
 		renderWindow.draw(fieldShape);
 		renderWindow.draw(valueText);
@@ -108,12 +110,12 @@ int main()
 	// ---------------Инициализация основного окна---------------
 	const unsigned int WINDOW_WIDTH = 800;
 	const unsigned int WINDOW_HEIGHT = 600;
-	sf::RenderWindow mainWindow(sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}), "Home Library");
+	sf::RenderWindow mainWindow(sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}), L"Домашняя библиотека");
 
 	// ---------------Создание объектов---------------
 													// Размер по x - количество букв * 10
 													// Размер по y - размер символа * 2
-	InputField bookTitle(font, "Название книги", {}, { 320.0f, 36.f });
+	InputField bookTitle(font, L"Название книги", {100.0f, 100.0f}, { 320.0f, 36.f });
 
 	// ---------------Обработка событий---------------
 	while (mainWindow.isOpen())
@@ -148,10 +150,11 @@ int main()
 				bookTitle.HandleTextEntered(textEntered->unicode);
 			}
 		}
-	}
-	// ---------------Очистка элементов---------------
-	mainWindow.clear(sf::Color(227, 178, 60));
+		// ---------------Очистка элементов---------------
+		mainWindow.clear(sf::Color(227, 178, 60));
 
-	// ---------------Отрисовка элементов---------------
-	bookTitle.Draw(mainWindow);
+		// ---------------Отрисовка элементов---------------
+		bookTitle.Draw(mainWindow);
+		mainWindow.display();
+	}	
 }
