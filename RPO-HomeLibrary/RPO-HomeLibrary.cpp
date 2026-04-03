@@ -137,8 +137,9 @@ private:
 
 int main()
 {
-	// ---------------Инициализация основного окна---------------
-	sf::Font font("Comic Sans MS.ttf");	
+	// ---------------Загрузка ресурсов---------------
+	sf::Font font("Comic Sans MS.ttf");
+	sf::Texture bookTexture("book1.png");
 
 	// ---------------Инициализация основного окна---------------
 	const unsigned int WINDOW_WIDTH = 800;
@@ -177,6 +178,8 @@ int main()
 		};
 
 	std::vector<Book> booksArray;
+	booksArray.push_back(Book{L"Искусство языка Си", L"Сунь Си", L"2027.04.03"});
+	booksArray.push_back(Book{L"Отруби", L"Валентин Касевьев Омарович", L"-2000.-0.1.-5"});
 
 	// Размер по x - количество букв * 10
 													// Размер по y - размер символа * 2
@@ -306,13 +309,21 @@ int main()
 			{
 				const Book& book = booksArray[i];
 				// Формат вывода книги: 1. Название / автор. - год
-				sf::String bookInfo = sf::String(std::to_string(i + 1)) + ". " + book.title + " / " + book.author + ". - " + book.year;
+				sf::String bookInfo = sf::String(std::to_string(i + 1)) + ". " + book.title + " / " + book.author + ". \n- " + book.year;
+
+				// Отрисовка спрайта в программе.
+				// По аналогии с отрисовкой текста в графическом приложении, где есть два вида классов Text и String, у отрисовки пользовательской (своей) графики есть класс Texture, отвечающий за содержимое изображения, и класс Sprite, отвечающий за рендер или отрисовку в графическом окне.
+				sf::Sprite bookSprite(bookTexture);
+				bookSprite.setScale({ 0.01f, 0.01f });
+				bookSprite.setPosition({ 430.0f, y });
+				mainWindow.draw(bookSprite);
+
 				sf::Text bookLine(font, bookInfo, 18);
 				bookLine.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
-				bookLine.setPosition({ 440.0f,  y });
+				bookLine.setPosition({ 480.0f,  y });
 				mainWindow.draw(bookLine);
 
-				y += 25.0f;
+				y += 50.0f;
 			}
 		}
 
