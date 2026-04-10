@@ -20,7 +20,7 @@ class InputField // shape, событие нажатия по фигуре, от
 public:
 	// Удобно разграничить функционал конструктора следующим образом: инициализацию производить в значениях по умолчанию, а настраивать объекты в теле конструктора
 	//			шрифт,				 подпись к полю ввода,		позиция в окне,		размер
-	InputField(const sf::Font& font, sf::String caption, sf::Vector2f position, sf::Vector2f size) : captionText(font, caption, 18), valueText(font, L"Я пример", 18) 
+	InputField(const sf::Font& font, sf::String caption, sf::Vector2f position, sf::Vector2f size) : captionText(font, caption, 18), valueText(font, L"Я пример", 18)
 	{
 		// fieldShape
 		fieldShape.setPosition(position);
@@ -33,7 +33,7 @@ public:
 		captionText.setPosition({ position.x, position.y - 25.0f });
 		// valueText
 		valueText.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
-		valueText.setPosition({ position.x + 10.0f, position.y + 5.0f});
+		valueText.setPosition({ position.x + 10.0f, position.y + 5.0f });
 	}
 
 	// Функция для проверки попадания в окно
@@ -133,7 +133,7 @@ public:
 
 private:
 	sf::RectangleShape buttonShape;
-	sf::Text label;	
+	sf::Text label;
 };
 
 // ---------------Класс анимации---------------
@@ -184,7 +184,7 @@ public:
 		frameClock.restart();
 		totalClock.restart();
 		currentFrame = 0;
-	}	
+	}
 
 	// Функция, производящая продвижение по кадрам
 	bool UpdateAnimation()
@@ -219,7 +219,7 @@ public:
 		// Создаем объект спрайта и помещаем в него текстуру из массива кадров, обращаясь по индексу текущего кадра
 		sf::Sprite frameSprite(*frames[currentFrame]);
 		frameSprite.setScale({ 1.0f, 1.0f });
-		frameSprite.setPosition({500.0f, 260.0f});
+		frameSprite.setPosition({ 500.0f, 260.0f });
 
 		window.draw(frameSprite);
 	}
@@ -228,7 +228,7 @@ private:
 	int currentFrame = 0;
 	bool isActive = false;
 	float frameDelay = 0.1f; // скорость смены (задержки) кадров
-	float totalDuration = 100.4f;
+	float totalDuration = 2.4f;
 	sf::Clock frameClock; // таймер смены кадра
 	sf::Clock totalClock; // таймер учета всего прошедшенго времени
 };
@@ -252,8 +252,9 @@ int main()
 	// ---------------Инициализация основного окна---------------
 	const unsigned int WINDOW_WIDTH = 800;
 	const unsigned int WINDOW_HEIGHT = 600;
-	sf::RenderWindow mainWindow(sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}), L"Домашняя библиотека");
-	// Добавление иконки
+	sf::RenderWindow mainWindow(sf::VideoMode({ WINDOW_WIDTH, WINDOW_HEIGHT }), L"Домашняя библиотека");
+	// Умный уникальный указатель на объекты окна, который можно создать в отдельной лямбда-функции OpenBookWindow
+	std::unique_ptr<sf::RenderWindow> bookWindow;
 	sf::Image icon("icon.png");
 	mainWindow.setIcon(icon);
 
@@ -278,16 +279,9 @@ int main()
 	bool showStatus = false;
 	sf::Clock statusClock;
 
-	auto SetStatus = [&](sf::String& message)
-		{
-			statusMessage = message;
-			showStatus = true;
-			statusClock.restart();
-		};
-
 	std::vector<Book> booksArray;
-	booksArray.push_back(Book{L"Искусство языка Си", L"Сунь Си", L"2027.04.03"});
-	booksArray.push_back(Book{L"Отруби", L"Валентин Касевьев Омарович", L"-2000.-0.1.-5"});
+	booksArray.push_back(Book{ L"Искусство языка Си", L"Сунь Си", L"2027.04.03" });
+	booksArray.push_back(Book{ L"Отруби", L"Валентин Касевьев Омарович", L"-2000.-0.1.-5" });
 
 	// Размер по x - количество букв * 10
 													// Размер по y - размер символа * 2
@@ -295,8 +289,16 @@ int main()
 	InputField authorField(font, L"Автор книги", { 20.0f, 200.0f }, { 320.0f, 36.f });
 	InputField yearField(font, L"Год издания", { 20.0f, 300.0f }, { 320.0f, 36.f });
 
+	auto SetStatus = [&](sf::String& message)
+		{
+			statusMessage = message;
+			showStatus = true;
+			statusClock.restart();
+		};
+
 	auto AddBook = [&]()
 		{
+			// Проверяем заполнены ли объекты полей ввода
 			if (bookTitleField.GetValue().isEmpty() || authorField.GetValue().isEmpty() || yearField.GetValue().isEmpty())
 			{
 				sf::String message(L"Не все поля заполнены!");
@@ -304,26 +306,43 @@ int main()
 				return;
 			}
 
-			// Только тогда, когда все время, отведенное на анимацию, завершится, мы добавляем книгу в массив для отрисовки на экране
-			booksArray.push_back(Book{ bookTitleField.GetValue(), authorField.GetValue(), yearField.GetValue() });
-
-			bookTitleField.ClearInputValue();
-			yearField.ClearInputValue();
-			authorField.ClearInputValue();
+			// Если что-то пойдет не так с добавлением книги, винить эту лямбду!
 
 			loadingAnimation.StartAnimation();
 			sf::String message(L"Добавление книги...");
 			SetStatus(message);
-		};													
+		};
+
+	int selectedBookIndex; // Глобальная индекса текущей выбранной книги
+	auto OpenBookWindow = [&](int index)
+		{
+			selectedBookIndex = index;
+
+			// Проверяем на наличие уже открытого окна книги
+			bookWindow = std::make_unique<sf::RenderWindow>
+				(
+					sf::VideoMode({ 380, 240 }),
+					L"Окно книги",
+					sf::Style::Close
+				);
+		};
+
+	auto IsBookRowHit = [&](sf::Vector2f point, int index) -> bool
+		{
+			float y = 60.0f * index; // переделать
+			// ПЕРЕДЕЛАТЬ С ПРИМЕНЕНИЕМ КОНСТАНТ!!!
+			return point.x >= 450.0f && point.x <= 450.0f + 300.0f && point.y >= y && point.y <= y + 60.0f;
+		};
 
 	Button addBookButton(font, L"Добавить книгу", { 90.0f, 500.0f }, { 200.0f, 26.0f });
 
-	// ---------------Обработка событий---------------
+	// ---------------Обработка событий основного окна---------------
 	while (mainWindow.isOpen())
 	{
 		// Обработка события по взаимодействию с главным окном
 		while (const std::optional event = mainWindow.pollEvent())
 		{
+			// Проверка на закрытие окна
 			if (event->is<sf::Event::Closed>())
 			{
 				mainWindow.close();
@@ -364,10 +383,24 @@ int main()
 							authorField.SetActive(false);
 							yearField.SetActive(false);
 						}
-						// Обработка нажатия на кнопку
+						// Обработка нажатия на кнопку добавления книги
 						if (addBookButton.Contains(mousePoint))
 						{
 							AddBook();
+						}
+
+						// Если массив книг не пустой, то перечисляем все объекты в массиве и проверяем на какой конкретно объект пользователь нажал. После вызываем функцию открытия карточки книги, в которую передаем индекс книги в массиве для того, чтобы в карточке можно было сразу отобразить всю информацию по книге
+						if (!booksArray.empty())
+						{
+							for (int i = 0; i < booksArray.size(); i++)
+							{
+								// Вызываем функцию, аналогичную Contains, которая проверяет нажал ли пользователь в нужное место
+								if (IsBookRowHit(mousePoint, i))
+								{
+									OpenBookWindow(i); // Вызываем функцию, которая бы создавал окно книги
+									break;
+								}
+							}
 						}
 					}
 				}
@@ -383,17 +416,59 @@ int main()
 
 		if (loadingAnimation.UpdateAnimation())
 		{
+			// СЮДА ВЫНЕСТИ ДОБАВЛЕНИЕ КНИГИ В МАССИВ, ЧТОБЫ РЕШИТЬ ПРОБЛЕМУ, КОГДА КНИГА ДОБАВЛЯЕТСЯ ПЕРЕД ЗАГРУЗКОЙ
+			// Только тогда, когда все время, отведенное на анимацию, завершится, мы добавляем книгу в массив для отрисовки на экране
+			booksArray.push_back(Book{
+					bookTitleField.GetValue(),
+					authorField.GetValue(),
+					yearField.GetValue()
+				});
+
+			bookTitleField.ClearInputValue();
+			yearField.ClearInputValue();
+			authorField.ClearInputValue();
+
 			sf::String message(L"Книга успешно добавлена!");
 			SetStatus(message);
 		}
 
 		// Очистка текста статуса
 		if (showStatus && statusClock.getElapsedTime().asSeconds() > 2.0f) showStatus = false;
-		
-		// ---------------Очистка элементов---------------
-		mainWindow.clear(sf::Color(227, 178, 60));
+
+		// ---------------Взаимодействие с окном книги---------------
+		// Если указатель на окно книги проинициализирован и окно открыто, то обрабатываем взаимодействие с новым открытым окном
+		if (bookWindow && bookWindow->isOpen())
+		{
+			// Обработка события по взаимодействию с окном книги
+			while (const std::optional event = bookWindow->pollEvent())
+			{
+				// Проверка на закрытие окна
+				if (event->is<sf::Event::Closed>())
+				{
+					bookWindow->close();
+					bookWindow.reset(); // Убираем инициализацию окна, чтобы при повторном открытии без ошибок помещать новые данные
+					break;
+				}
+
+				if (const auto* mouseEvent = event->getIf<sf::Event::MouseButtonPressed>())
+				{
+					if (mouseEvent->button == sf::Mouse::Button::Left)
+					{
+						// Создание объекта вектора, показывающего координаты нажатия курсора мыши
+						sf::Vector2f mousePoint =
+						{
+							float(mouseEvent->position.x),
+							float(mouseEvent->position.y)
+						};
+
+						// ДОПОЛНИТЕЛЬНАЯ ЛОГИКА РАЗМЕЩЕНИЯ КНОПОК С ПЕРЕЛИСТЫВАНИЕМ КНИГ И Т.П.
+					}
+				}
+			}
+		}
 
 		// ---------------Отрисовка элементов---------------
+		mainWindow.clear(sf::Color(227, 178, 60));
 		mainWindow.draw(leftPanel);
 		mainWindow.draw(rightPanel);
 		authorField.Draw(mainWindow);
@@ -425,11 +500,17 @@ int main()
 		}
 		else
 		{
-			float y = 60.0f;
-			// Перечисляем все библиотеки из массива и создаем под каждую из них свой объект текста
+			// Перечисляем все книги из массива и создаем под каждую из них свой объект
 			for (int i = 0; i < booksArray.size(); ++i)
 			{
 				const Book& book = booksArray[i];
+				float y = 60.0f * i; // Отступы у ячеек книг завязаны на константном значении 60. При каждом цикле отсутуп новый
+
+				sf::RectangleShape rowShape({ 300.0f, 60.0f });
+				rowShape.setPosition({ 450.0f, y });
+				// Дополнительно выставлять цвет
+				mainWindow.draw(rowShape);
+
 				// Формат вывода книги: 1. Название / автор. - год
 				sf::String bookInfo = sf::String(std::to_string(i + 1)) + ". " + book.title + " / " + book.author + ". \n- " + book.year;
 
@@ -437,20 +518,36 @@ int main()
 				// По аналогии с отрисовкой текста в графическом приложении, где есть два вида классов Text и String, у отрисовки пользовательской (своей) графики есть класс Texture, отвечающий за содержимое изображения, и класс Sprite, отвечающий за рендер или отрисовку в графическом окне.
 				sf::Sprite bookSprite(bookTexture);
 				bookSprite.setScale({ 0.01f, 0.01f });
-				bookSprite.setPosition({ 430.0f, y });
+				bookSprite.setPosition({ 450.0f, y });
 				mainWindow.draw(bookSprite);
 
 				sf::Text bookLine(font, bookInfo, 18);
 				bookLine.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
-				bookLine.setPosition({ 480.0f,  y });
+				bookLine.setPosition({ 500.0f,  y });
 				mainWindow.draw(bookLine);
-
-				y += 50.0f;
 			}
 		}
 		loadingAnimation.Draw(mainWindow);
-		mainWindow.display();
-	}	
+		mainWindow.display(); // отображаем рендер на окне
+
+		// ПРАКТИКА ЗДЕСЬ ДЕЛАЕТСЯ
+		// После рендера главного окна отрисовываем все содержимое на окне книги, если оно открыто
+		if (bookWindow && bookWindow->isOpen())
+		{
+			bookWindow->clear(sf::Color(SUNFLOWER_GOLD_COLOR));
+			// Тестировочный текст и его отрисовка
+			sf::String testString = L"Я окно книги!\nА я корешок!";
+			sf::Text testText(font, testString, 18);
+			testText.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
+			testText.setPosition({ 20.0f, 20.0f });
+			bookWindow->draw(testText);
+
+			bookWindow->display(); // отображаем рендер на окне
+		}
+	}
 
 	return 0;
 }
+
+//		Практика
+// В блоке рендера окна книги необходимо обращаться к массиву книг по индексу и выводить информацию в окне по текущей книге. Использовать существующие объекты String и Text. По желанию продекорировать.
