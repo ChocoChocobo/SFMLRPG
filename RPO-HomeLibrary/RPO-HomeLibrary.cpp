@@ -1,26 +1,46 @@
-п»ї#include <SFML/Graphics.hpp>
+#include <SFML/Graphics.hpp>
 #include <vector>
 #include <iostream>
 
+// ---------------Константы---------------
+// Константы для цветовой палитры
 const sf::Color ROSY_GRANITE_COLOR = { 163, 149, 148 };
 const sf::Color EGGSHELL_COLOR = { 237, 235, 215 };
 const sf::Color CHARCOAL_BROWN_COLOR = { 66, 62, 55 };
 const sf::Color SUNFLOWER_GOLD_COLOR = { 227, 178, 60 };
 
-// ---------------РЎС‚СЂСѓРєС‚СѓСЂР° РєРЅРёРіРё---------------
+// Константы для списка книг в правой панели
+constexpr float BOOK_LIST_X = 450.0f; // начало списка книг по x
+constexpr float BOOK_LIST_START_Y = 150.0f;
+constexpr float BOOK_ROW_HEIGHT = 60.0f;
+constexpr float BOOK_ROW_WIDTH = 300.0f;
+
+// Константы для правой панели
+constexpr float RIGHT_PANEL_X = 430.0f;
+constexpr float RIGHT_PANEL_Y = 15.0f;
+constexpr float RIGHT_PANEL_HEIGHT = 565.0f;
+constexpr float RIGHT_PANEL_WIDTH = 350.0f;
+
+// Константы для левой панели
+constexpr float LEFT_PANEL_X = 15.0f;
+constexpr float LEFT_PANEL_Y = 15.0f;
+constexpr float LEFT_PANEL_HEIGHT = 565.0f;
+constexpr float LEFT_PANEL_WIDTH = 350.0f;
+
+// ---------------Структура книги---------------
 struct Book
 {
 	sf::String title;
 	sf::String author;
 	sf::String year;
 };
-// ---------------РљР»Р°СЃСЃ РїРѕР»СЏ РІРІРѕРґР°---------------
-class InputField // shape, СЃРѕР±С‹С‚РёРµ РЅР°Р¶Р°С‚РёСЏ РїРѕ С„РёРіСѓСЂРµ, РѕС‚СЂРёСЃРѕРІРєР° Р±СѓРєРІ, РїРѕР»РѕР¶РµРЅРёРµ, СЂР°Р·РјРµСЂ, get-С„СѓРЅРєС†РёСЏ РїРѕ РІРѕР·РІСЂР°С‰РµРЅРёСЋ Р·РЅР°С‡РµРЅРёСЏ РѕР±СЉРµРєС‚Р°, РїРѕРґРїРёСЃСЊ Рє РїРѕР»СЋ РІРІРѕРґР°
+// ---------------Класс поля ввода---------------
+class InputField // shape, событие нажатия по фигуре, отрисовка букв, положение, размер, get-функция по возвращению значения объекта, подпись к полю ввода
 {
 public:
-	// РЈРґРѕР±РЅРѕ СЂР°Р·РіСЂР°РЅРёС‡РёС‚СЊ С„СѓРЅРєС†РёРѕРЅР°Р» РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР° СЃР»РµРґСѓСЋС‰РёРј РѕР±СЂР°Р·РѕРј: РёРЅРёС†РёР°Р»РёР·Р°С†РёСЋ РїСЂРѕРёР·РІРѕРґРёС‚СЊ РІ Р·РЅР°С‡РµРЅРёСЏС… РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ, Р° РЅР°СЃС‚СЂР°РёРІР°С‚СЊ РѕР±СЉРµРєС‚С‹ РІ С‚РµР»Рµ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР°
-	//			С€СЂРёС„С‚,				 РїРѕРґРїРёСЃСЊ Рє РїРѕР»СЋ РІРІРѕРґР°,		РїРѕР·РёС†РёСЏ РІ РѕРєРЅРµ,		СЂР°Р·РјРµСЂ
-	InputField(const sf::Font& font, sf::String caption, sf::Vector2f position, sf::Vector2f size) : captionText(font, caption, 18), valueText(font, L"РЇ РїСЂРёРјРµСЂ", 18)
+	// Удобно разграничить функционал конструктора следующим образом: инициализацию производить в значениях по умолчанию, а настраивать объекты в теле конструктора
+	//			шрифт,				 подпись к полю ввода,		позиция в окне,		размер
+	InputField(const sf::Font& font, sf::String caption, sf::Vector2f position, sf::Vector2f size) : captionText(font, caption, 18), valueText(font, L"Я пример", 18)
 	{
 		// fieldShape
 		fieldShape.setPosition(position);
@@ -36,8 +56,8 @@ public:
 		valueText.setPosition({ position.x + 10.0f, position.y + 5.0f });
 	}
 
-	// Р¤СѓРЅРєС†РёСЏ РґР»СЏ РїСЂРѕРІРµСЂРєРё РїРѕРїР°РґР°РЅРёСЏ РІ РѕРєРЅРѕ
-	// Р•СЃР»Рё С‚РѕС‡РєР°, РїРµСЂРµРґР°РІР°РµРјР°СЏ РІ РєР°С‡РµСЃС‚РІРµ РїР°СЂР°РјРµС‚СЂР° Р»РµР¶РёС‚ РІ РіСЂР°РЅРёС†Р°С… РѕРєРЅР°, РІРѕР·РІСЂР°С‰Р°РµРј true
+	// Функция для проверки попадания в окно
+	// Если точка, передаваемая в качестве параметра лежит в границах окна, возвращаем true
 	bool Contains(sf::Vector2f point) const
 	{
 		const sf::Vector2f position = fieldShape.getPosition();
@@ -46,42 +66,42 @@ public:
 		return point.x >= position.x && point.x <= position.x + size.x && point.y >= position.y && point.y <= position.y + size.y;
 	}
 
-	// Р¤СѓРЅРєС†РёСЏ РёР·РјРµРЅРµРЅРёСЏ С†РІРµС‚Р° С„РёРіСѓСЂС‹ РїСЂРё Р°РєС‚РёРІРЅРѕРј РёР»Рё РЅРµР°РєС‚РёРІРЅРѕРј СЂРµР¶РёРјРµ 
+	// Функция изменения цвета фигуры при активном или неактивном режиме 
 	void SetActive(bool isActive)
 	{
 		this->isActive = isActive;
 		fieldShape.setOutlineColor(isActive ? sf::Color(66, 62, 55, 255) : sf::Color(66, 62, 55, 150));
 	}
 
-	// Get-С„СѓРЅРєС†РёСЏ РїРѕ РІРѕР·РІСЂР°С‰РµРЅРёСЋ СЃС‚СЂРѕРєРѕРІРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ РїРѕР»СЏ РІРІРѕРґР°
+	// Get-функция по возвращению строкового значения поля ввода
 	const sf::String& GetValue() const
 	{
 		return valueString;
 	}
 
-	// Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅР°СЏ С„СѓРЅРєС†РёСЏ РѕС‡РёСЃС‚РєРё С‚РµРєСЃС‚Р° РІ РїРѕР»Рµ РІРІРѕРґР°
+	// Вспомогательная функция очистки текста в поле ввода
 	void ClearInputValue()
 	{
 		valueString.clear();
 	}
 
-	// Р¤СѓРЅРєС†РёСЏ-РѕР±СЂР°Р±РѕС‚С‡РёРє СЃРѕР±С‹С‚РёСЏ РІРІРµРґРµРЅРёСЏ СЃРёРјРІРѕР»Р° РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј, РїСЂРёРЅРёРјР°СЋС‰Р°СЏ СЃРёРјРІРѕР» СЋРЅРёРєРѕРґР°
-	// char_32_t - С‚РёРї РґР°РЅРЅС‹С…, Р·Р°С…РІР°С‚С‹РІР°СЋС‰РёР№ РІ РґРІР° Р±РѕР»СЊС€Рµ СЃРёРјРІРѕР»РѕРІ ASCII, РіРґРµ СЂР°СЃРїРѕР»Р°РіР°РµС‚СЃСЏ РєРёСЂРёР»Р»РёС†Р°
+	// Функция-обработчик события введения символа пользователем, принимающая символ юникода
+	// char_32_t - тип данных, захватывающий в два больше символов ASCII, где располагается кириллица
 	void HandleTextEntered(char32_t unicode)
 	{
-		if (!isActive) return; // Р•СЃР»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РІ Р°РєС‚РёРІРЅРѕРј РѕРєРЅРµ РІРІРѕРґР°, С‚Рѕ Р·Р°РІРµСЂС€Р°РµРј СЂР°Р±РѕС‚Сѓ С„СѓРЅРєС†РёРё
-		// РЎРёС‚СѓР°С†РёРё СЃС‚РёСЂР°РЅРёСЏ
+		if (!isActive) return; // Если пользователь не в активном окне ввода, то завершаем работу функции
+		// Ситуации стирания
 		if (unicode == 8) // Backspace
 		{
 			if (!valueString.isEmpty()) valueString.erase(valueString.getSize() - 1);
 		}
-		else if (unicode >= 32) // РЎРёС‚СѓР°С†РёСЏ РґРѕР±Р°РІР»РµРЅРёСЏ СЃРёРјРІРѕР»РѕРІ
+		else if (unicode >= 32) // Ситуация добавления символов
 		{
 			if (valueString.getSize() < maxLength) valueString += sf::String(unicode);
 		}
 	}
 
-	// Р¤СѓРЅРєС†РёСЏ РѕС‚СЂРёСЃРѕРІРєРё, РїСЂРёРЅРёРјР°СЋС‰Р°СЏ СЃСЃС‹Р»РєСѓ РЅР° РіСЂР°С„РёС‡РµСЃРєРѕРµ РѕРєРЅРѕ
+	// Функция отрисовки, принимающая ссылку на графическое окно
 	void Draw(sf::RenderWindow& renderWindow)
 	{
 		valueText.setString(valueString);
@@ -91,17 +111,17 @@ public:
 	}
 
 private:
-	// РћС‚СЂРёСЃРѕРІС‹РІР°РµРјС‹Рµ СЌР»РµРјРµРЅС‚С‹
+	// Отрисовываемые элементы
 	sf::RectangleShape fieldShape;
-	sf::Text captionText; // РїРѕРґРїРёСЃСЊ
+	sf::Text captionText; // подпись
 	sf::Text valueText;
-	// РџСЂРѕС‡РёРµ СЌР»РµРјРµРЅС‚С‹
+	// Прочие элементы
 	sf::String valueString;
 	bool isActive = false;
 	unsigned int maxLength = 32;
 };
 
-// ---------------РљР»Р°СЃСЃ РєРЅРѕРїРєРё---------------
+// ---------------Класс кнопки---------------
 class Button
 {
 public:
@@ -136,8 +156,8 @@ private:
 	sf::Text label;
 };
 
-// ---------------РљР»Р°СЃСЃ Р°РЅРёРјР°С†РёРё---------------
-class Animation // РЈ Р°РЅРёРјР°С†РёРё РµСЃС‚СЊ: РЅРµСЃРєРѕР»СЊРєРѕ С‚РµРєСЃС‚СѓСЂ (РєР°РґСЂРѕРІ), С‚РµРєСѓС‰РёР№ РєР°РґСЂ, СЃРєРѕСЂРѕСЃС‚СЊ СЃРјРµРЅС‹ РєР°РґСЂРѕРІ, РѕР±С‰Р°СЏ РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ (РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґР»СЏ СѓСЃР»РѕРІРёСЏ РїСЂРѕРёРіСЂС‹РІР°РЅРёСЏ Р°РЅРёРјР°С†РёРё), С‚Р°Р№РјРµСЂС‹
+// ---------------Класс анимации---------------
+class Animation // У анимации есть: несколько текстур (кадров), текущий кадр, скорость смены кадров, общая длительность (используется для условия проигрывания анимации), таймеры
 {
 public:
 	Animation() {}
@@ -148,22 +168,22 @@ public:
 		this->totalDuration = totalDuration;
 	}
 
-	// Р¤СѓРЅРєС†РёСЏ РїРѕ Р·Р°РіСЂСѓР·РєРµ С„Р°Р№Р»РѕРІ РєР°РґСЂРѕРІ, РїСЂРёРЅРёРјР°СЋС‰Р°СЏ РјР°СЃСЃРёРІ СЃС‚СЂРѕРє, СЃСЃС‹Р»Р°СЋС‰РёС…СЃСЏ РЅР° РїСѓС‚Рё РґРѕ РєР°РґСЂРѕРІ
+	// Функция по загрузке файлов кадров, принимающая массив строк, ссылающихся на пути до кадров
 	bool LoadFrames(const std::vector<std::string>& filePaths)
 	{
-		// РџРµСЂРІС‹Рј РґРµР»РѕРј РёРјРµСЋС‰РёРµСЃСЏ Р·Р°РіСЂСѓР¶РµРЅРЅС‹Рµ РєР°РґСЂС‹ РІ РѕР±СЉРµРєС‚ РѕС‡РёС‰Р°СЋС‚СЃСЏ, РґР»СЏ С‚РѕРіРѕ С‡С‚РѕР±С‹ РјРѕР¶РЅРѕ Р±С‹Р»Рѕ РїРѕРІС‚РѕСЂРЅРѕ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РѕР±СЉРµРєС‚ РєР»Р°СЃСЃР° Animation. Р­С‚Рѕ РІС‹РіРѕРґРЅРµРµ С‡РµРј СЃРѕР·РґР°РЅРёРµ РїРѕР»РЅРѕСЃС‚СЊСЋ РЅРѕРІРѕРіРѕ РѕР±СЉРµРєС‚Р°, РїРѕС‚РѕРјСѓ С‡С‚Рѕ РЅРµ РІС‹РґРµР»СЏРµС‚СЃСЏ РЅРѕРІР°СЏ РїР°РјСЏС‚СЊ РїРѕРґ РѕР±СЉРµРєС‚.
+		// Первым делом имеющиеся загруженные кадры в объект очищаются, для того чтобы можно было повторно использовать объект класса Animation. Это выгоднее чем создание полностью нового объекта, потому что не выделяется новая память под объект.
 		frames.clear();
-		// РџРѕСЃР»Рµ РїРѕР»РЅРѕР№ РѕС‡РёСЃС‚РєРё РјР°СЃСЃРёРІР° СЃС‚Р°РЅРѕРІРёС‚СЃСЏ РЅРµРёР·РІРµСЃС‚РЅРѕ РєРѕР»РёС‡РµСЃС‚РІРѕ РѕР±СЉРµРєС‚РѕРІ. Р”Р»СЏ СЌС‚РѕРіРѕ Р·Р°СЂР°РЅРµРµ СЂРµР·РµСЂРІРёСЂСѓРµРј РїР°РјСЏС‚СЊ РїРѕРґ РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕСЃС‚СѓРїР°СЋС‰РёС… РѕР±СЉРµРєС‚РѕРІ РІ РїР°СЂР°РјРµС‚СЂ С„СѓРЅРєС†РёРё.
+		// После полной очистки массива становится неизвестно количество объектов. Для этого заранее резервируем память под количество поступающих объектов в параметр функции.
 		frames.reserve(filePaths.size());
 
 		for (const std::string& filePath : filePaths)
 		{
-			// РЎРѕР·РґР°РµРј РѕР±СЉРµРєС‚ СѓРјРЅРѕРіРѕ СѓРєР°Р·Р°С‚РµР»СЏ РЅР° С‚РµРєСЃС‚СѓСЂСѓ
+			// Создаем объект умного указателя на текстуру
 			std::shared_ptr<sf::Texture> texture = std::make_shared<sf::Texture>();
-			// РџС‹С‚Р°РµРјСЃСЏ Р·Р°РіСЂСѓР·РёС‚СЊ РІ РѕР±СЉРµРєС‚ С‚РµРєСЃС‚СѓСЂС‹ С„Р°Р№Р»
+			// Пытаемся загрузить в объект текстуры файл
 			if (!texture->loadFromFile(filePath))
 			{
-				std::cerr << "Р¤Р°Р№Р» С‚РµРєСЃС‚СѓСЂС‹ РЅРµ РЅР°Р№РґРµРЅ: " << filePath << std::endl;
+				std::cerr << "Файл текстуры не найден: " << filePath << std::endl;
 				return false;
 			}
 			frames.push_back(texture);
@@ -177,7 +197,7 @@ public:
 		return isActive;
 	}
 
-	// Р¤СѓРЅРєС†РёСЏ, РІС‹СЃС‚Р°РІР»СЏСЋС‰Р°СЏ Р·РЅР°С‡РµРЅРёСЏ РІ РёР·РЅР°С‡Р°Р»СЊРЅРѕРµ РїРѕР»РѕР¶РµРЅРёРµ
+	// Функция, выставляющая значения в изначальное положение
 	void StartAnimation()
 	{
 		isActive = true;
@@ -186,22 +206,22 @@ public:
 		currentFrame = 0;
 	}
 
-	// Р¤СѓРЅРєС†РёСЏ, РїСЂРѕРёР·РІРѕРґСЏС‰Р°СЏ РїСЂРѕРґРІРёР¶РµРЅРёРµ РїРѕ РєР°РґСЂР°Рј
+	// Функция, производящая продвижение по кадрам
 	bool UpdateAnimation()
 	{
-		// Р•СЃР»Рё Р°РЅРёРјР°С†РёСЏ РЅРµ Р°РєС‚РёРІРЅР°, С‚Рѕ РІРѕР·РІСЂР°С‰Р°РµРј false
+		// Если анимация не активна, то возвращаем false
 		if (!isActive) return false;
 
-		// РћРїРёР°СЂСЏСЃСЊ РЅР° С‚Р°Р№РјРµСЂ СЃРјРµРЅС‹ РєР°РґСЂР°, РµСЃР»Рё РѕРЅ СЃС‚Р°РЅРѕРІРёС‚СЃСЏ Р±РѕР»СЊС€Рµ, С‡РµРј РІСЂРµРјСЏ Р·Р°РґРµСЂР¶РєРё (СЃРєРѕСЂРѕСЃС‚Рё СЃРјРµРЅС‹ РєР°РґСЂР°), С‚Рѕ РїСЂРёР±Р°РІР»СЏРµРј Рє С‚РµРєСѓС‰РµРјСѓ РєР°РґСЂСѓ + 1
+		// Опиарясь на таймер смены кадра, если он становится больше, чем время задержки (скорости смены кадра), то прибавляем к текущему кадру + 1
 		if (frameClock.getElapsedTime().asSeconds() > frameDelay)
 		{
-			// РџСЂРё РїСЂРѕСЃС‚РѕРј СѓРІРµР»РёС‡РµРЅРёРё РєР°РґСЂР° СЂР°РЅРѕ РёР»Рё РїРѕР·РґРЅРѕ РїРѕСЏРІРёС‚СЃСЏ СЃРёС‚СѓР°С†РёСЏ, РїСЂРё РєРѕС‚РѕСЂРѕР№ Р·РЅР°С‡РµРЅРёРµ С‚РµРєСѓС‰РµРіРѕ РєР°РґСЂР° СЃС‚Р°РЅРµС‚ Р±РѕР»СЊС€Рµ, С‡РµРј РѕР±С‰РµРµ РєРѕР»-РІРѕ РєР°РґСЂРѕРІ. РќРµРѕР±С…РѕРґРёРјРѕ СЌС‚Рѕ СЂР°Р·СЂРµС€РёС‚СЊ. Р­С‚Рѕ РјРѕР¶РЅРѕ СЃРґРµР»Р°С‚СЊ Р±Р»Р°РіРѕРґР°СЂСЏ РЅР°С…РѕР¶РґРµРЅРёСЋ РїСЂРѕС†РµРЅС‚Р° РѕС‚ РѕР±С‰РµРіРѕ РєРѕР»РёС‡РµСЃС‚РІР° РєР°РґСЂРѕРІ
-			currentFrame = (++currentFrame) % frames.size(); // Р‘Р»Р°РіРѕРґР°СЂСЏ РґРµР»РµРЅРёСЋ СЃ РѕСЃС‚Р°С‚РєРѕРј С‚РµРєСѓС‰РёР№ РєР°РґСЂ РЅРµ СѓР№РґРµС‚ РІ Р±РѕР»СЊС€РµРµ Р·РЅР°С‡РµРЅРёРµ, С‡РµРј РєРѕР»РёС‡РµСЃС‚РІРѕ СЌР»РµРјРµРЅС‚РѕРІ РІ РјР°СЃСЃРёРІРµ
+			// При простом увеличении кадра рано или поздно появится ситуация, при которой значение текущего кадра станет больше, чем общее кол-во кадров. Необходимо это разрешить. Это можно сделать благодаря нахождению процента от общего количества кадров
+			currentFrame = (++currentFrame) % frames.size(); // Благодаря делению с остатком текущий кадр не уйдет в большее значение, чем количество элементов в массиве
 			frameClock.restart();
 		}
 
-		// РѕРїСЂРµРґРµР»СЏРµРј РєРѕРіРґР° Р·Р°РєР°РЅС‡РёРІР°РµС‚СЃСЏ Р°РЅРёРјР°С†РёСЏ Рё РІС‹СЃС‚Р°РІР»СЏРµРј Р·РЅР°С‡РµРЅРёРµ isActive = false
-		// РµСЃР»Рё РІСЂРµРјСЏ Р°РЅРёРјР°С†РёРё РїРѕРґРѕС€Р»Рѕ Рє РєРѕРЅС†Сѓ, С‚Рѕ Р·РЅР°С‡РёС‚ РѕРЅР° РІРµСЂРЅРѕ РѕС‚СЂР°Р±РѕС‚Р°Р»Р°
+		// определяем когда заканчивается анимация и выставляем значение isActive = false
+		// если время анимации подошло к концу, то значит она верно отработала
 		if (totalClock.getElapsedTime().asSeconds() > totalDuration)
 		{
 			isActive = false;
@@ -211,12 +231,12 @@ public:
 		return false;
 	}
 
-	// Р¤СѓРЅРєС†РёСЏ РѕС‚СЂРёСЃРѕРІРєРё Р°РЅРёРјР°С†РёРё РІ РіСЂР°С„РёС‡РµСЃРєРѕРµ РѕРєРЅРѕ
+	// Функция отрисовки анимации в графическое окно
 	void Draw(sf::RenderWindow& window)
 	{
 		if (!isActive) return;
 
-		// РЎРѕР·РґР°РµРј РѕР±СЉРµРєС‚ СЃРїСЂР°Р№С‚Р° Рё РїРѕРјРµС‰Р°РµРј РІ РЅРµРіРѕ С‚РµРєСЃС‚СѓСЂСѓ РёР· РјР°СЃСЃРёРІР° РєР°РґСЂРѕРІ, РѕР±СЂР°С‰Р°СЏСЃСЊ РїРѕ РёРЅРґРµРєСЃСѓ С‚РµРєСѓС‰РµРіРѕ РєР°РґСЂР°
+		// Создаем объект спрайта и помещаем в него текстуру из массива кадров, обращаясь по индексу текущего кадра
 		sf::Sprite frameSprite(*frames[currentFrame]);
 		frameSprite.setScale({ 1.0f, 1.0f });
 		frameSprite.setPosition({ 500.0f, 260.0f });
@@ -224,22 +244,42 @@ public:
 		window.draw(frameSprite);
 	}
 private:
-	std::vector<std::shared_ptr<sf::Texture>> frames; // РјР°СЃСЃРёРІ СѓРјРЅС‹С… СѓРєР°Р·Р°С‚РµР»РµР№ РЅР° С‚РµРєСЃС‚СѓСЂС‹
+	std::vector<std::shared_ptr<sf::Texture>> frames; // массив умных указателей на текстуры
 	int currentFrame = 0;
 	bool isActive = false;
-	float frameDelay = 0.1f; // СЃРєРѕСЂРѕСЃС‚СЊ СЃРјРµРЅС‹ (Р·Р°РґРµСЂР¶РєРё) РєР°РґСЂРѕРІ
+	float frameDelay = 0.1f; // скорость смены (задержки) кадров
 	float totalDuration = 2.4f;
-	sf::Clock frameClock; // С‚Р°Р№РјРµСЂ СЃРјРµРЅС‹ РєР°РґСЂР°
-	sf::Clock totalClock; // С‚Р°Р№РјРµСЂ СѓС‡РµС‚Р° РІСЃРµРіРѕ РїСЂРѕС€РµРґС€РµРЅРіРѕ РІСЂРµРјРµРЅРё
+	sf::Clock frameClock; // таймер смены кадра
+	sf::Clock totalClock; // таймер учета всего прошедшенго времени
 };
+
+// Функция фильтрации списка видимых книг, возвращающая массив индексов книг для отображения
+// В нее передается запрос в виде строки (то, что пользователь написал с каждым символом) и осуществляется поиск по массиву
+static std::vector<int> FilterVisibleBooks(const std::vector<Book>& books, const sf::String& query)
+{
+	std::vector<int> visibleBooks;
+	visibleBooks.reserve(books.size()); // Функция reserve динамически определяет размер массива
+
+	for (int i = 0; i < books.size(); ++i)
+	{
+		// Вычленяем книгу в отдельную переменную по ссылке
+		const Book& book = books[i];
+		// Создаем единую строку для книги, отделяя название, автора и год разделителем в виде пробела, чтобы было удобнее искать по подстрокам
+		sf::String fullInfo = book.title + " " + book.author + " " + book.year;
+		// Если запрос пользователя пуст или подстрока находится, то добавляем индекс книги в массив индексов видимых книг
+		if (query.isEmpty() || fullInfo.find(query) != sf::String::InvalidPos) visibleBooks.push_back(i);
+	}
+
+	return visibleBooks;
+}
 
 int main()
 {
-	// ---------------Р—Р°РіСЂСѓР·РєР° СЂРµСЃСѓСЂСЃРѕРІ---------------
+	// ---------------Загрузка ресурсов---------------
 	sf::Font font("Comic Sans MS.ttf");
 	sf::Texture bookTexture("book1.png");
 	Animation loadingAnimation;
-	// Р’ РјРѕРµРј РїСЂРѕРµРєС‚Рµ РєР°РґСЂС‹ Р°РЅРёРјР°С†РёРё Р·Р°РіСЂСѓР·РєРё РЅР°С…РѕРґСЏС‚СЃСЏ РІ РїР°РїРєРµ animations РІ РєРѕСЂРЅРµ РїСЂРѕРµРєС‚Р°
+	// В моем проекте кадры анимации загрузки находятся в папке animations в корне проекта
 	loadingAnimation.LoadFrames({
 		"animations\\1.png",
 		"animations\\2.png",
@@ -249,24 +289,24 @@ int main()
 		"animations\\6.png",
 		});
 
-	// ---------------РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РѕСЃРЅРѕРІРЅРѕРіРѕ РѕРєРЅР°---------------
+	// ---------------Инициализация основного окна---------------
 	const unsigned int WINDOW_WIDTH = 800;
 	const unsigned int WINDOW_HEIGHT = 600;
-	sf::RenderWindow mainWindow(sf::VideoMode({ WINDOW_WIDTH, WINDOW_HEIGHT }), L"Р”РѕРјР°С€РЅСЏСЏ Р±РёР±Р»РёРѕС‚РµРєР°");
-	// РЈРјРЅС‹Р№ СѓРЅРёРєР°Р»СЊРЅС‹Р№ СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РѕР±СЉРµРєС‚С‹ РѕРєРЅР°, РєРѕС‚РѕСЂС‹Р№ РјРѕР¶РЅРѕ СЃРѕР·РґР°С‚СЊ РІ РѕС‚РґРµР»СЊРЅРѕР№ Р»СЏРјР±РґР°-С„СѓРЅРєС†РёРё OpenBookWindow
+	sf::RenderWindow mainWindow(sf::VideoMode({ WINDOW_WIDTH, WINDOW_HEIGHT }), L"Домашняя библиотека");
+	// Умный уникальный указатель на объекты окна, который можно создать в отдельной лямбда-функции OpenBookWindow
 	std::unique_ptr<sf::RenderWindow> bookWindow;
 	sf::Image icon("icon.png");
 	mainWindow.setIcon(icon);
 
-	// ---------------РЎРѕР·РґР°РЅРёРµ РѕР±СЉРµРєС‚РѕРІ---------------
-	sf::RectangleShape leftPanel({ 350.0f, 565.0f });
-	leftPanel.setPosition({ 15.0f, 15.0f });
+	// ---------------Создание объектов---------------
+	sf::RectangleShape leftPanel({ LEFT_PANEL_WIDTH, LEFT_PANEL_HEIGHT });
+	leftPanel.setPosition({ LEFT_PANEL_X, LEFT_PANEL_Y });
 	leftPanel.setFillColor(sf::Color(ROSY_GRANITE_COLOR));
 	leftPanel.setOutlineColor(sf::Color(CHARCOAL_BROWN_COLOR));
 	leftPanel.setOutlineThickness(5.0f);
 
-	sf::RectangleShape rightPanel({ 350.0f, 565.0f });
-	rightPanel.setPosition({ 430.0f, 15.0f });
+	sf::RectangleShape rightPanel({ RIGHT_PANEL_WIDTH, RIGHT_PANEL_HEIGHT });
+	rightPanel.setPosition({ RIGHT_PANEL_X, RIGHT_PANEL_Y });
 	rightPanel.setFillColor(sf::Color(ROSY_GRANITE_COLOR));
 	rightPanel.setOutlineColor(sf::Color(CHARCOAL_BROWN_COLOR));
 	rightPanel.setOutlineThickness(5.0f);
@@ -274,20 +314,22 @@ int main()
 	sf::Text statusText(font, "", 18);
 	statusText.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
 	statusText.setPosition({ 90.0f, 540.0f });
-	// РћР±СЉРµРєС‚С‹ РґР»СЏ СЃС‚Р°С‚СѓСЃР° РґРѕР±Р°РІР»РµРЅРёСЏ РєРЅРёРіРё
+	// Объекты для статуса добавления книги
 	sf::String statusMessage;
 	bool showStatus = false;
 	sf::Clock statusClock;
 
 	std::vector<Book> booksArray;
-	booksArray.push_back(Book{ L"РСЃРєСѓСЃСЃС‚РІРѕ СЏР·С‹РєР° РЎРё", L"РЎСѓРЅСЊ РЎРё", L"2027.04.03" });
-	booksArray.push_back(Book{ L"РћС‚СЂСѓР±Рё", L"Р’Р°Р»РµРЅС‚РёРЅ РљР°СЃРµРІСЊРµРІ РћРјР°СЂРѕРІРёС‡", L"-2000.-0.1.-5" });
+	booksArray.push_back(Book{ L"Искусство языка Си", L"Сунь Си", L"2027.04.03" });
+	booksArray.push_back(Book{ L"Черная магия", L"афу фэ фэ атсуенье нье нье обомубэ осас", L"2026.04.29" });
+	booksArray.push_back(Book{ L"Отруби", L"Валентин Касевьев Омарович", L"-2000.-0.1.-5" });
 
-	// Р Р°Р·РјРµСЂ РїРѕ x - РєРѕР»РёС‡РµСЃС‚РІРѕ Р±СѓРєРІ * 10
-													// Р Р°Р·РјРµСЂ РїРѕ y - СЂР°Р·РјРµСЂ СЃРёРјРІРѕР»Р° * 2
-	InputField bookTitleField(font, L"РќР°Р·РІР°РЅРёРµ РєРЅРёРіРё", { 20.0f, 100.0f }, { 320.0f, 36.f });
-	InputField authorField(font, L"РђРІС‚РѕСЂ РєРЅРёРіРё", { 20.0f, 200.0f }, { 320.0f, 36.f });
-	InputField yearField(font, L"Р“РѕРґ РёР·РґР°РЅРёСЏ", { 20.0f, 300.0f }, { 320.0f, 36.f });
+	// Размер по x - количество букв * 10
+													// Размер по y - размер символа * 2
+	InputField bookTitleField(font, L"Название книги", { 20.0f, 100.0f }, { 320.0f, 36.0f });
+	InputField authorField(font, L"Автор книги", { 20.0f, 200.0f }, { 320.0f, 36.0f });
+	InputField yearField(font, L"Год издания", { 20.0f, 300.0f }, { 320.0f, 36.0f });
+	InputField searchField(font, L"Поиск по книге", {450.0f, 50.0f}, {320.0f, 36.0f});
 
 	auto SetStatus = [&](sf::String& message)
 		{
@@ -298,82 +340,92 @@ int main()
 
 	auto AddBook = [&]()
 		{
-			// РџСЂРѕРІРµСЂСЏРµРј Р·Р°РїРѕР»РЅРµРЅС‹ Р»Рё РѕР±СЉРµРєС‚С‹ РїРѕР»РµР№ РІРІРѕРґР°
+			// Проверяем заполнены ли объекты полей ввода
 			if (bookTitleField.GetValue().isEmpty() || authorField.GetValue().isEmpty() || yearField.GetValue().isEmpty())
 			{
-				sf::String message(L"РќРµ РІСЃРµ РїРѕР»СЏ Р·Р°РїРѕР»РЅРµРЅС‹!");
+				sf::String message(L"Не все поля заполнены!");
 				SetStatus(message);
 				return;
 			}
 
-			// Р•СЃР»Рё С‡С‚Рѕ-С‚Рѕ РїРѕР№РґРµС‚ РЅРµ С‚Р°Рє СЃ РґРѕР±Р°РІР»РµРЅРёРµРј РєРЅРёРіРё, РІРёРЅРёС‚СЊ СЌС‚Сѓ Р»СЏРјР±РґСѓ!
+			// Если что-то пойдет не так с добавлением книги, винить эту лямбду!
 
 			loadingAnimation.StartAnimation();
-			sf::String message(L"Р”РѕР±Р°РІР»РµРЅРёРµ РєРЅРёРіРё...");
+			sf::String message(L"Добавление книги...");
 			SetStatus(message);
 		};
 
-	int selectedBookIndex; // Р“Р»РѕР±Р°Р»СЊРЅР°СЏ РёРЅРґРµРєСЃР° С‚РµРєСѓС‰РµР№ РІС‹Р±СЂР°РЅРЅРѕР№ РєРЅРёРіРё
+	int selectedBookIndex; // Глобальная индекса текущей выбранной книги
 	auto OpenBookWindow = [&](int index)
 		{
 			selectedBookIndex = index;
 
-			// РџСЂРѕРІРµСЂСЏРµРј РЅР° РЅР°Р»РёС‡РёРµ СѓР¶Рµ РѕС‚РєСЂС‹С‚РѕРіРѕ РѕРєРЅР° РєРЅРёРіРё
+			// Проверяем на наличие уже открытого окна книги
 			bookWindow = std::make_unique<sf::RenderWindow>
 				(
 					sf::VideoMode({ 380, 240 }),
-					L"РћРєРЅРѕ РєРЅРёРіРё",
+					L"Окно книги",
 					sf::Style::Close
 				);
 		};
 
 	auto IsBookRowHit = [&](sf::Vector2f point, int index) -> bool
 		{
-			float y = 60.0f * index; // РїРµСЂРµРґРµР»Р°С‚СЊ
-			// РџР•Р Р•Р”Р•Р›РђРўР¬ РЎ РџР РРњР•РќР•РќРР•Рњ РљРћРќРЎРўРђРќРў!!!
-			return point.x >= 450.0f && point.x <= 450.0f + 300.0f && point.y >= y && point.y <= y + 60.0f;
+			float y = BOOK_LIST_START_Y + BOOK_ROW_HEIGHT * index; // переделать
+			// ПЕРЕДЕЛАТЬ С ПРИМЕНЕНИЕМ КОНСТАНТ!!!
+			return point.x >= BOOK_LIST_X && point.x <= BOOK_LIST_X + BOOK_ROW_WIDTH && point.y >= y && point.y <= y + BOOK_ROW_HEIGHT;
 		};
 
-	Button addBookButton(font, L"Р”РѕР±Р°РІРёС‚СЊ РєРЅРёРіСѓ", { 90.0f, 500.0f }, { 200.0f, 26.0f });
+	Button addBookButton(font, L"Добавить книгу", { 90.0f, 500.0f }, { 200.0f, 26.0f });
 
-	// ---------------РћР±СЂР°Р±РѕС‚РєР° СЃРѕР±С‹С‚РёР№ РѕСЃРЅРѕРІРЅРѕРіРѕ РѕРєРЅР°---------------
+	// ---------------Обработка событий основного окна---------------
 	while (mainWindow.isOpen())
 	{
-		// РћР±СЂР°Р±РѕС‚РєР° СЃРѕР±С‹С‚РёСЏ РїРѕ РІР·Р°РёРјРѕРґРµР№СЃС‚РІРёСЋ СЃ РіР»Р°РІРЅС‹Рј РѕРєРЅРѕРј
+		// Обработка события по взаимодействию с главным окном
 		while (const std::optional event = mainWindow.pollEvent())
 		{
-			// РџСЂРѕРІРµСЂРєР° РЅР° Р·Р°РєСЂС‹С‚РёРµ РѕРєРЅР°
+			// Проверка на закрытие окна
 			if (event->is<sf::Event::Closed>())
 			{
 				mainWindow.close();
 			}
-			// РР—РњР•РќР•РќРћ: РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РјРѕР¶РµС‚ РІР·Р°РёРјРѕРґРµР№СЃС‚РІРѕРІР°С‚СЊ СЃ РїСЂРѕРіСЂР°РјРјРѕР№ С‚РѕР»СЊРєРѕ РµСЃР»Рё Р°РЅРёРјР°С†РёСЏ Р·Р°РіСЂСѓР·РєРё РєРЅРёРіРё РІ Р±РёР±Р»РёРѕС‚РµРєСѓ РЅРµ Р°РєС‚РёРІРЅР°!
+			// ИЗМЕНЕНО: пользователь может взаимодействовать с программой только если анимация загрузки книги в библиотеку не активна!
 			else if (!loadingAnimation.GetIsActive())
 			{
-				// РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅР°СЏ РѕР±СЂР°Р±РѕС‚РєР° СЃРѕР±С‹С‚РёСЏ РЅР°С…РѕР¶РґРµРЅРёСЏ РјС‹С€Рё РІ РїСЂРµРґРµР»Р°С… РѕРєРЅР° Рё РЅР°Р¶Р°С‚РёСЏ. getIF - РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅР°СЏ С„СѓРЅРєС†РёСЏ, РѕРїСЂРµРґРµР»СЏСЋС‰Р°СЏ РЅР°Р»РёС‡РёРµ СЃРѕР±С‹С‚РёСЏ СЃ РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рј СѓСЃСЃР»РѕРІРёРµРј
+				// дополнительная обработка события нахождения мыши в пределах окна и нажатия. getIF - вспомогательная функция, определяющая наличие события с дополнительным уссловием
 				if (const auto* mouseEvent = event->getIf<sf::Event::MouseButtonPressed>())
 				{
 					if (mouseEvent->button == sf::Mouse::Button::Left)
 					{
-						// РЎРѕР·РґР°РЅРёРµ РѕР±СЉРµРєС‚Р° РІРµРєС‚РѕСЂР°, РїРѕРєР°Р·С‹РІР°СЋС‰РµРіРѕ РєРѕРѕСЂРґРёРЅР°С‚С‹ РЅР°Р¶Р°С‚РёСЏ РєСѓСЂСЃРѕСЂР° РјС‹С€Рё
+						// Создание объекта вектора, показывающего координаты нажатия курсора мыши
 						sf::Vector2f mousePoint = { float(mouseEvent->position.x), float(mouseEvent->position.y) };
 
-						// Р•СЃР»Рё РєР»РёРє РјС‹С€Рё РЅР°С…РѕРґРёС‚СЃСЏ РІ РєР°РєРѕРј-Р»РёР±Рѕ РёР· РіСЂР°С„РёС‡РµСЃРєРёС… РѕР±СЉРµРєС‚РѕРІ РЅР° СЌРєСЂР°РЅРµ, Р°РєС‚РёРІРёСЂСѓРµРј СЌС‚Рё РѕР±СЉРµРєС‚С‹
+						// Если клик мыши находится в каком-либо из графических объектов на экране, активируем эти объекты
 						if (bookTitleField.Contains(mousePoint))
 						{
 							bookTitleField.SetActive(true);
 							authorField.SetActive(false);
 							yearField.SetActive(false);
+							searchField.SetActive(false);
 						}
 						else if (authorField.Contains(mousePoint))
 						{
 							authorField.SetActive(true);
 							bookTitleField.SetActive(false);
 							yearField.SetActive(false);
+							searchField.SetActive(false);
 						}
 						else if (yearField.Contains(mousePoint))
 						{
 							yearField.SetActive(true);
+							bookTitleField.SetActive(false);
+							authorField.SetActive(false);
+							searchField.SetActive(false);
+						}
+						else if (searchField.Contains(mousePoint))
+						{
+							searchField.SetActive(true);
+							yearField.SetActive(false);
 							bookTitleField.SetActive(false);
 							authorField.SetActive(false);
 						}
@@ -383,41 +435,44 @@ int main()
 							authorField.SetActive(false);
 							yearField.SetActive(false);
 						}
-						// РћР±СЂР°Р±РѕС‚РєР° РЅР°Р¶Р°С‚РёСЏ РЅР° РєРЅРѕРїРєСѓ РґРѕР±Р°РІР»РµРЅРёСЏ РєРЅРёРіРё
+						// Обработка нажатия на кнопку добавления книги
 						if (addBookButton.Contains(mousePoint))
 						{
 							AddBook();
 						}
 
-						// Р•СЃР»Рё РјР°СЃСЃРёРІ РєРЅРёРі РЅРµ РїСѓСЃС‚РѕР№, С‚Рѕ РїРµСЂРµС‡РёСЃР»СЏРµРј РІСЃРµ РѕР±СЉРµРєС‚С‹ РІ РјР°СЃСЃРёРІРµ Рё РїСЂРѕРІРµСЂСЏРµРј РЅР° РєР°РєРѕР№ РєРѕРЅРєСЂРµС‚РЅРѕ РѕР±СЉРµРєС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅР°Р¶Р°Р». РџРѕСЃР»Рµ РІС‹Р·С‹РІР°РµРј С„СѓРЅРєС†РёСЋ РѕС‚РєСЂС‹С‚РёСЏ РєР°СЂС‚РѕС‡РєРё РєРЅРёРіРё, РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµРј РёРЅРґРµРєСЃ РєРЅРёРіРё РІ РјР°СЃСЃРёРІРµ РґР»СЏ С‚РѕРіРѕ, С‡С‚РѕР±С‹ РІ РєР°СЂС‚РѕС‡РєРµ РјРѕР¶РЅРѕ Р±С‹Р»Рѕ СЃСЂР°Р·Сѓ РѕС‚РѕР±СЂР°Р·РёС‚СЊ РІСЃСЋ РёРЅС„РѕСЂРјР°С†РёСЋ РїРѕ РєРЅРёРіРµ
+						// Если массив книг не пустой, то перечисляем все объекты в массиве и проверяем на какой конкретно объект пользователь нажал. После вызываем функцию открытия карточки книги, в которую передаем индекс книги в массиве для того, чтобы в карточке можно было сразу отобразить всю информацию по книге
 						if (!booksArray.empty())
 						{
-							for (int i = 0; i < booksArray.size(); i++)
+							// ПЕРЕДЕЛАНО: Для того, чтобы открыть нужное окно с книгой необходимо теперь опираться на индекс видимых книг
+							std::vector<int> visibleBooks = FilterVisibleBooks(booksArray, searchField.GetValue());
+							for (int row = 0; row < visibleBooks.size(); ++row)
 							{
-								// Р’С‹Р·С‹РІР°РµРј С„СѓРЅРєС†РёСЋ, Р°РЅР°Р»РѕРіРёС‡РЅСѓСЋ Contains, РєРѕС‚РѕСЂР°СЏ РїСЂРѕРІРµСЂСЏРµС‚ РЅР°Р¶Р°Р» Р»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РІ РЅСѓР¶РЅРѕРµ РјРµСЃС‚Рѕ
-								if (IsBookRowHit(mousePoint, i))
+								// Вызываем функцию, аналогичную Contains, которая проверяет нажал ли пользователь в нужное место
+								if (IsBookRowHit(mousePoint, row))
 								{
-									OpenBookWindow(i); // Р’С‹Р·С‹РІР°РµРј С„СѓРЅРєС†РёСЋ, РєРѕС‚РѕСЂР°СЏ Р±С‹ СЃРѕР·РґР°РІР°Р» РѕРєРЅРѕ РєРЅРёРіРё
+									OpenBookWindow(visibleBooks[row]); // Вызываем функцию, которая бы создавал окно книги
 									break;
 								}
 							}
 						}
 					}
 				}
-				// РћР±СЂР°Р±РѕС‚РєР° СЃРѕР±С‹С‚РёСЏ РїРµС‡Р°С‚Р°РЅРёСЏ
+				// Обработка события печатания
 				else if (const auto* textEntered = event->getIf<sf::Event::TextEntered>())
 				{
 					bookTitleField.HandleTextEntered(textEntered->unicode);
 					authorField.HandleTextEntered(textEntered->unicode);
 					yearField.HandleTextEntered(textEntered->unicode);
+					searchField.HandleTextEntered(textEntered->unicode);
 				}
 			}
 		}
 
 		if (loadingAnimation.UpdateAnimation())
 		{
-			// РЎР®Р”Рђ Р’Р«РќР•РЎРўР Р”РћР‘РђР’Р›Р•РќРР• РљРќРР“Р Р’ РњРђРЎРЎРР’, Р§РўРћР‘Р« Р Р•РЁРРўР¬ РџР РћР‘Р›Р•РњРЈ, РљРћР“Р”Рђ РљРќРР“Рђ Р”РћР‘РђР’Р›РЇР•РўРЎРЇ РџР•Р Р•Р” Р—РђР“Р РЈР—РљРћР™
-			// РўРѕР»СЊРєРѕ С‚РѕРіРґР°, РєРѕРіРґР° РІСЃРµ РІСЂРµРјСЏ, РѕС‚РІРµРґРµРЅРЅРѕРµ РЅР° Р°РЅРёРјР°С†РёСЋ, Р·Р°РІРµСЂС€РёС‚СЃСЏ, РјС‹ РґРѕР±Р°РІР»СЏРµРј РєРЅРёРіСѓ РІ РјР°СЃСЃРёРІ РґР»СЏ РѕС‚СЂРёСЃРѕРІРєРё РЅР° СЌРєСЂР°РЅРµ
+			// СЮДА ВЫНЕСТИ ДОБАВЛЕНИЕ КНИГИ В МАССИВ, ЧТОБЫ РЕШИТЬ ПРОБЛЕМУ, КОГДА КНИГА ДОБАВЛЯЕТСЯ ПЕРЕД ЗАГРУЗКОЙ
+			// Только тогда, когда все время, отведенное на анимацию, завершится, мы добавляем книгу в массив для отрисовки на экране
 			booksArray.push_back(Book{
 					bookTitleField.GetValue(),
 					authorField.GetValue(),
@@ -428,25 +483,25 @@ int main()
 			yearField.ClearInputValue();
 			authorField.ClearInputValue();
 
-			sf::String message(L"РљРЅРёРіР° СѓСЃРїРµС€РЅРѕ РґРѕР±Р°РІР»РµРЅР°!");
+			sf::String message(L"Книга успешно добавлена!");
 			SetStatus(message);
 		}
 
-		// РћС‡РёСЃС‚РєР° С‚РµРєСЃС‚Р° СЃС‚Р°С‚СѓСЃР°
+		// Очистка текста статуса
 		if (showStatus && statusClock.getElapsedTime().asSeconds() > 2.0f) showStatus = false;
 
-		// ---------------Р’Р·Р°РёРјРѕРґРµР№СЃС‚РІРёРµ СЃ РѕРєРЅРѕРј РєРЅРёРіРё---------------
-		// Р•СЃР»Рё СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РѕРєРЅРѕ РєРЅРёРіРё РїСЂРѕРёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°РЅ Рё РѕРєРЅРѕ РѕС‚РєСЂС‹С‚Рѕ, С‚Рѕ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј РІР·Р°РёРјРѕРґРµР№СЃС‚РІРёРµ СЃ РЅРѕРІС‹Рј РѕС‚РєСЂС‹С‚С‹Рј РѕРєРЅРѕРј
+		// ---------------Взаимодействие с окном книги---------------
+		// Если указатель на окно книги проинициализирован и окно открыто, то обрабатываем взаимодействие с новым открытым окном
 		if (bookWindow && bookWindow->isOpen())
 		{
-			// РћР±СЂР°Р±РѕС‚РєР° СЃРѕР±С‹С‚РёСЏ РїРѕ РІР·Р°РёРјРѕРґРµР№СЃС‚РІРёСЋ СЃ РѕРєРЅРѕРј РєРЅРёРіРё
+			// Обработка события по взаимодействию с окном книги
 			while (const std::optional event = bookWindow->pollEvent())
 			{
-				// РџСЂРѕРІРµСЂРєР° РЅР° Р·Р°РєСЂС‹С‚РёРµ РѕРєРЅР°
+				// Проверка на закрытие окна
 				if (event->is<sf::Event::Closed>())
 				{
 					bookWindow->close();
-					bookWindow.reset(); // РЈР±РёСЂР°РµРј РёРЅРёС†РёР°Р»РёР·Р°С†РёСЋ РѕРєРЅР°, С‡С‚РѕР±С‹ РїСЂРё РїРѕРІС‚РѕСЂРЅРѕРј РѕС‚РєСЂС‹С‚РёРё Р±РµР· РѕС€РёР±РѕРє РїРѕРјРµС‰Р°С‚СЊ РЅРѕРІС‹Рµ РґР°РЅРЅС‹Рµ
+					bookWindow.reset(); // Убираем инициализацию окна, чтобы при повторном открытии без ошибок помещать новые данные
 					break;
 				}
 
@@ -454,20 +509,20 @@ int main()
 				{
 					if (mouseEvent->button == sf::Mouse::Button::Left)
 					{
-						// РЎРѕР·РґР°РЅРёРµ РѕР±СЉРµРєС‚Р° РІРµРєС‚РѕСЂР°, РїРѕРєР°Р·С‹РІР°СЋС‰РµРіРѕ РєРѕРѕСЂРґРёРЅР°С‚С‹ РЅР°Р¶Р°С‚РёСЏ РєСѓСЂСЃРѕСЂР° РјС‹С€Рё
+						// Создание объекта вектора, показывающего координаты нажатия курсора мыши
 						sf::Vector2f mousePoint =
 						{
 							float(mouseEvent->position.x),
 							float(mouseEvent->position.y)
 						};
 
-						// Р”РћРџРћР›РќРРўР•Р›Р¬РќРђРЇ Р›РћР“РРљРђ Р РђР—РњР•Р©Р•РќРРЇ РљРќРћРџРћРљ РЎ РџР•Р Р•Р›РРЎРўР«Р’РђРќРР•Рњ РљРќРР“ Р Рў.Рџ.
+						// ДОПОЛНИТЕЛЬНАЯ ЛОГИКА РАЗМЕЩЕНИЯ КНОПОК С ПЕРЕЛИСТЫВАНИЕМ КНИГ И Т.П.
 					}
 				}
 			}
 		}
 
-		// ---------------РћС‚СЂРёСЃРѕРІРєР° СЌР»РµРјРµРЅС‚РѕРІ---------------
+		// ---------------Отрисовка элементов---------------
 		mainWindow.clear(sf::Color(227, 178, 60));
 		mainWindow.draw(leftPanel);
 		mainWindow.draw(rightPanel);
@@ -475,79 +530,110 @@ int main()
 		yearField.Draw(mainWindow);
 		bookTitleField.Draw(mainWindow);
 		addBookButton.Draw(mainWindow);
+		searchField.Draw(mainWindow);
 
-		// Р•СЃР»Рё СЃС‚Р°С‚СѓСЃ РґРѕР±Р°РІР»РµРЅРёСЏ РєРЅРёРіРё РµСЃС‚СЊ, С‚Рѕ РѕС‚СЂРёСЃРѕРІС‹РІР°РµРј РµРіРѕ
+		// Если статус добавления книги есть, то отрисовываем его
 		if (showStatus)
 		{
 			statusText.setString(statusMessage);
 			mainWindow.draw(statusText);
 		}
 
-		// РЎРѕР·РґР°РµРј РѕР±СЉРµРєС‚ С‚РµРєСЃС‚Р° РґР»СЏ РІС‹РІРѕРґР° РєРѕР»РёС‡РµСЃС‚РІР° РєРЅРёРі
+		std::vector<int> visibleBooks = FilterVisibleBooks(booksArray, searchField.GetValue());
+
+		// Создаем объект текста для вывода количества книг
 		sf::Text bookCountText(font, "", 18);
 		bookCountText.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
-		bookCountText.setString(sf::String(L"Р’СЃРµРіРѕ РєРЅРёРі: ") + sf::String(std::to_string(booksArray.size())));
-		bookCountText.setPosition({ 440.0f, 30.0f });
+		bookCountText.setString
+		(
+			sf::String(L"Всего книг: ") + 
+			sf::String(std::to_string(booksArray.size()))
+		);
+		bookCountText.setPosition({ 440.0f, 90.0f });
 		mainWindow.draw(bookCountText);
 
-		// Р•СЃР»Рё РјР°СЃСЃРёРІ РєРЅРёРі РїСѓСЃС‚, С‚Рѕ СЃРѕР·РґР°РµРј С‚РµРєСЃС‚ РѕРґРёРЅ, РІ РґСЂСѓРіРѕРј СЃР»СѓС‡Р°Рµ - РґСЂСѓРіРѕР№
+		// Создаем объект текста для вывода количества книг
+		sf::Text visibleBookCountText(font, "", 18);
+		visibleBookCountText.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
+		visibleBookCountText.setString
+		(
+			sf::String(L"Видимых книг: ") +
+			sf::String(std::to_string(visibleBooks.size())) +
+			sf::String(" / ") +
+			sf::String(std::to_string(booksArray.size()))
+		);
+		visibleBookCountText.setPosition({ 575.0f, 90.0f });
+		mainWindow.draw(visibleBookCountText);
+
+		// Если массив книг пуст, то создаем текст один, в другом случае - другой
 		if (booksArray.empty())
 		{
-			sf::Text emptyText(font, L"Р‘РёР±Р»РёРѕС‚РµРєР° РїСѓСЃС‚Р°", 18);
+			sf::Text emptyText(font, L"Библиотека пуста", 18);
 			emptyText.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
 			emptyText.setPosition({ 440.0f, 60.0f });
 			mainWindow.draw(emptyText);
 		}
+		else if (visibleBooks.empty())
+		{
+			sf::Text notFoundText(font, L"Ничего не найдено", 18);
+			notFoundText.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
+			notFoundText.setPosition({ 500.0f, 160.0f });
+			mainWindow.draw(notFoundText);
+		}
 		else
 		{
-			// РџРµСЂРµС‡РёСЃР»СЏРµРј РІСЃРµ РєРЅРёРіРё РёР· РјР°СЃСЃРёРІР° Рё СЃРѕР·РґР°РµРј РїРѕРґ РєР°Р¶РґСѓСЋ РёР· РЅРёС… СЃРІРѕР№ РѕР±СЉРµРєС‚
-			for (int i = 0; i < booksArray.size(); ++i)
+			// Перечисляем все книги из массива и создаем под каждую из них свой объект
+			for (int row = 0; row < visibleBooks.size(); ++row)
 			{
-				const Book& book = booksArray[i];
-				float y = 60.0f * i; // РћС‚СЃС‚СѓРїС‹ Сѓ СЏС‡РµРµРє РєРЅРёРі Р·Р°РІСЏР·Р°РЅС‹ РЅР° РєРѕРЅСЃС‚Р°РЅС‚РЅРѕРј Р·РЅР°С‡РµРЅРёРё 60. РџСЂРё РєР°Р¶РґРѕРј С†РёРєР»Рµ РѕС‚СЃСѓС‚СѓРї РЅРѕРІС‹Р№
+				int bookIndex = visibleBooks[row];
+				const Book& book = booksArray[bookIndex];
+				float y = BOOK_LIST_START_Y + BOOK_ROW_HEIGHT * row; // Отступы у ячеек книг завязаны на константном значении 60. При каждом цикле отсутуп новый
 
-				sf::RectangleShape rowShape({ 300.0f, 60.0f });
-				rowShape.setPosition({ 450.0f, y });
-				// Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅРѕ РІС‹СЃС‚Р°РІР»СЏС‚СЊ С†РІРµС‚
+				// Создание прямоугольника книги
+				sf::RectangleShape rowShape({ BOOK_ROW_WIDTH, BOOK_ROW_HEIGHT});
+				rowShape.setPosition({ BOOK_LIST_X, y });
+				rowShape.setFillColor(EGGSHELL_COLOR);
+				rowShape.setOutlineColor(CHARCOAL_BROWN_COLOR);
+				rowShape.setOutlineThickness(2.0f);
 				mainWindow.draw(rowShape);
-
-				// Р¤РѕСЂРјР°С‚ РІС‹РІРѕРґР° РєРЅРёРіРё: 1. РќР°Р·РІР°РЅРёРµ / Р°РІС‚РѕСЂ. - РіРѕРґ
-				sf::String bookInfo = sf::String(std::to_string(i + 1)) + ". " + book.title + " / " + book.author + ". \n- " + book.year;
-
-				// РћС‚СЂРёСЃРѕРІРєР° СЃРїСЂР°Р№С‚Р° РІ РїСЂРѕРіСЂР°РјРјРµ.
-				// РџРѕ Р°РЅР°Р»РѕРіРёРё СЃ РѕС‚СЂРёСЃРѕРІРєРѕР№ С‚РµРєСЃС‚Р° РІ РіСЂР°С„РёС‡РµСЃРєРѕРј РїСЂРёР»РѕР¶РµРЅРёРё, РіРґРµ РµСЃС‚СЊ РґРІР° РІРёРґР° РєР»Р°СЃСЃРѕРІ Text Рё String, Сѓ РѕС‚СЂРёСЃРѕРІРєРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРѕР№ (СЃРІРѕРµР№) РіСЂР°С„РёРєРё РµСЃС‚СЊ РєР»Р°СЃСЃ Texture, РѕС‚РІРµС‡Р°СЋС‰РёР№ Р·Р° СЃРѕРґРµСЂР¶РёРјРѕРµ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ, Рё РєР»Р°СЃСЃ Sprite, РѕС‚РІРµС‡Р°СЋС‰РёР№ Р·Р° СЂРµРЅРґРµСЂ РёР»Рё РѕС‚СЂРёСЃРѕРІРєСѓ РІ РіСЂР°С„РёС‡РµСЃРєРѕРј РѕРєРЅРµ.
+			
+				// Отрисовка спрайта в программе.
+				// По аналогии с отрисовкой текста в графическом приложении, где есть два вида классов Text и String, у отрисовки пользовательской (своей) графики есть класс Texture, отвечающий за содержимое изображения, и класс Sprite, отвечающий за рендер или отрисовку в графическом окне.
 				sf::Sprite bookSprite(bookTexture);
 				bookSprite.setScale({ 0.01f, 0.01f });
-				bookSprite.setPosition({ 450.0f, y });
+				bookSprite.setPosition({ BOOK_LIST_X + 5.0f, y + 5.0f });
 				mainWindow.draw(bookSprite);
 
+
+				// Формат вывода книги: 1. Название / автор. - год
+				sf::String bookInfo = book.title + " / " + book.author + ". \n- " + book.year;
 				sf::Text bookLine(font, bookInfo, 18);
-				bookLine.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
-				bookLine.setPosition({ 500.0f,  y });
+				bookLine.setFillColor(CHARCOAL_BROWN_COLOR);
+				bookLine.setPosition({ BOOK_LIST_X + 50.0f,  y + 5.0f });
 				mainWindow.draw(bookLine);
 			}
 		}
 		loadingAnimation.Draw(mainWindow);
-		mainWindow.display(); // РѕС‚РѕР±СЂР°Р¶Р°РµРј СЂРµРЅРґРµСЂ РЅР° РѕРєРЅРµ
+		mainWindow.display(); // отображаем рендер на окне
 
-		// РџР РђРљРўРРљРђ Р—Р”Р•РЎР¬ Р”Р•Р›РђР•РўРЎРЇ
-		// РџРѕСЃР»Рµ СЂРµРЅРґРµСЂР° РіР»Р°РІРЅРѕРіРѕ РѕРєРЅР° РѕС‚СЂРёСЃРѕРІС‹РІР°РµРј РІСЃРµ СЃРѕРґРµСЂР¶РёРјРѕРµ РЅР° РѕРєРЅРµ РєРЅРёРіРё, РµСЃР»Рё РѕРЅРѕ РѕС‚РєСЂС‹С‚Рѕ
+		// ПРАКТИКА ЗДЕСЬ ДЕЛАЕТСЯ
+		// После рендера главного окна отрисовываем все содержимое на окне книги, если оно открыто
 		if (bookWindow && bookWindow->isOpen())
 		{
 			bookWindow->clear(sf::Color(SUNFLOWER_GOLD_COLOR));
-			// РўРµСЃС‚РёСЂРѕРІРѕС‡РЅС‹Р№ С‚РµРєСЃС‚ Рё РµРіРѕ РѕС‚СЂРёСЃРѕРІРєР°
-			sf::String testString = L"РЇ РѕРєРЅРѕ РєРЅРёРіРё!\nРђ СЏ РєРѕСЂРµС€РѕРє!";
+			// Тестировочный текст и его отрисовка
+			sf::String testString = L"Я окно книги!\nА я корешок!";
 			sf::Text testText(font, testString, 18);
 			testText.setFillColor(sf::Color(CHARCOAL_BROWN_COLOR));
 			testText.setPosition({ 20.0f, 20.0f });
 			bookWindow->draw(testText);
 
-			bookWindow->display(); // РѕС‚РѕР±СЂР°Р¶Р°РµРј СЂРµРЅРґРµСЂ РЅР° РѕРєРЅРµ
+			bookWindow->display(); // отображаем рендер на окне
 		}
 	}
 
 	return 0;
 }
 
-//		РџСЂР°РєС‚РёРєР°
-// Р’ Р±Р»РѕРєРµ СЂРµРЅРґРµСЂР° РѕРєРЅР° РєРЅРёРіРё РЅРµРѕР±С…РѕРґРёРјРѕ РѕР±СЂР°С‰Р°С‚СЊСЃСЏ Рє РјР°СЃСЃРёРІСѓ РєРЅРёРі РїРѕ РёРЅРґРµРєСЃСѓ Рё РІС‹РІРѕРґРёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ РІ РѕРєРЅРµ РїРѕ С‚РµРєСѓС‰РµР№ РєРЅРёРіРµ. РСЃРїРѕР»СЊР·РѕРІР°С‚СЊ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРµ РѕР±СЉРµРєС‚С‹ String Рё Text. РџРѕ Р¶РµР»Р°РЅРёСЋ РїСЂРѕРґРµРєРѕСЂРёСЂРѕРІР°С‚СЊ.
+//		Практика
+// В статической функции FilterVisibleBooks приводить все текстовые поля у книг и ввод пользователя к нижнему регистру и осуществлять поиск этим способом
